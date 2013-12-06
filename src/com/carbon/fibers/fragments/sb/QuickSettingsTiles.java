@@ -17,6 +17,8 @@
 package com.carbon.fibers.fragments.sb;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,6 +27,10 @@ import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.UserHandle;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -52,6 +58,14 @@ import java.util.Comparator;
 public class QuickSettingsTiles extends Fragment {
 
     private static final int MENU_RESET = Menu.FIRST;
+
+    private static final String SEPARATOR = "OV=I=XseparatorX=I=VO";
+
+    private static final int DLG_RESET         = 0;
+    private static final int DLG_SCREENSHOT_DELAY = 1;
+    private static final int DLG_SCREENTIMEOUT = 2;
+    private static final int DLG_NETWORK_MODE  = 3;
+    private static final int DLG_RINGER        = 4;
 
     private DraggableGridView mDragView;
     private ViewGroup mContainer;
@@ -174,7 +188,25 @@ public class QuickSettingsTiles extends Fragment {
                 }
             }
         }
-        mDragView.addView(tileView, newTile ? mDragView.getChildCount() - 1 : mDragView.getChildCount());
+        if (tileView != null) {
+            if (titleId == QuickSettingsUtil.TILES.get(
+                        QSConstants.TILE_SCREENTIMEOUT).getTitleResId()
+                || titleId == QuickSettingsUtil.TILES.get(
+                            QSConstants.TILE_RINGER).getTitleResId()
+                || titleId == QuickSettingsUtil.TILES.get(
+                            QSConstants.TILE_SCREENSHOT).getTitleResId()
+                || QuickSettingsUtil.isTileAvailable(QSConstants.TILE_NETWORKMODE)
+                        && titleId == QuickSettingsUtil.TILES.get(
+                            QSConstants.TILE_NETWORKMODE).getTitleResId()) {
+
+                ImageView settings =  (ImageView) tileView.findViewById(R.id.settings);
+                if (settings != null) {
+                    settings.setVisibility(View.VISIBLE);
+                }
+            }
+            mDragView.addView(tileView, newTile
+                    ? mDragView.getChildCount() - 1 : mDragView.getChildCount());
+        }
     }
 
     @Override
@@ -203,7 +235,26 @@ public class QuickSettingsTiles extends Fragment {
         mDragView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-                if (arg2 != mDragView.getChildCount() - 1) return;
+                ArrayList<String> tiles = QuickSettingsUtil.getTileListFromString(
+                        QuickSettingsUtil.getCurrentTiles(getActivity(), mConfigRibbon));
+                if (arg2 != mDragView.getChildCount() - 1) {
+                    if (arg2 == -1) {
+                        return;
+                    }
+                    if (tiles.get(arg2).equals(QSConstants.TILE_SCREENTIMEOUT)) {
+                        showDialogInner(DLG_SCREENTIMEOUT);
+                    }
+                    if (tiles.get(arg2).equals(QSConstants.TILE_NETWORKMODE)) {
+                        showDialogInner(DLG_NETWORK_MODE);
+                    }
+                    if (tiles.get(arg2).equals(QSConstants.TILE_RINGER)) {
+                        showDialogInner(DLG_RINGER);
+                    }
+                    if (tiles.get(arg2).equals(QSConstants.TILE_SCREENSHOT)) {
+                        showDialogInner(DLG_SCREENSHOT_DELAY);
+                    }
+                    return;
+                }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                 builder.setTitle(R.string.tile_choose_title)
                 .setAdapter(mTileAdapter, new DialogInterface.OnClickListener() {
@@ -239,7 +290,6 @@ public class QuickSettingsTiles extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-
         menu.add(0, MENU_RESET, 0, R.string.reset)
                 .setIcon(R.drawable.ic_action_backup) // use the backup icon
                 .setAlphabeticShortcut('r')
@@ -270,6 +320,177 @@ public class QuickSettingsTiles extends Fragment {
         });
         alert.setNegativeButton(R.string.cancel, null);
         alert.create().show();
+    }
+
+    private void showDialogInner(int id) {
+        DialogFragment newFragment = MyAlertDialogFragment.newInstance(id);
+        newFragment.setTargetFragment(this, 0);
+        newFragment.show(getFragmentManager(), "dialog " + id);
+    }
+
+    public static class MyAlertDialogFragment extends DialogFragment {
+
+        public static MyAlertDialogFragment newInstance(int id) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt("id", id);
+            frag.setArguments(args);
+            return frag;
+        }
+
+        QuickSettingsTiles getOwner() {
+            return (QuickSettingsTiles) getTargetFragment();
+        }
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int id = getArguments().getInt("id");
+            switch (id) {
+                case DLG_SCREENSHOT_DELAY:
+                    String[] dialogEntriesSS = getResources().getStringArray(
+                            getResources().getIdentifier("entries_screenshot_delay",
+                            "array", "com.carbon.fibers"));
+                    final String[] dialogValuesSS = getResources().getStringArray(
+                            getResources().getIdentifier("values_screenshot_delay",
+                            "array", "com.carbon.fibers"));
+                    int actualEntrySS = Settings.System.getInt(
+                            getActivity().getContentResolver(),
+                            Settings.System.SCREENSHOT_TOGGLE_DELAY, 5000);
+                    return new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.pref_screenshot_delay_title)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setSingleChoiceItems(dialogEntriesSS, actualEntrySS,
+                        new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            Settings.System.putInt(
+                                getActivity().getContentResolver(),
+                                Settings.System.SCREENSHOT_TOGGLE_DELAY,
+                                Integer.valueOf(dialogValuesSS[which]));
+                                dismiss();
+                        }
+                    })
+                    .create();
+                case DLG_SCREENTIMEOUT:
+                    String[] dialogEntries = getResources().getStringArray(
+                            getResources().getIdentifier("entries_screentimeout_widget",
+                            "array", "com.carbon.fibers"));
+                    final String[] dialogValuesST = getResources().getStringArray(
+                            getResources().getIdentifier("values_screentimeout_widget",
+                            "array", "com.carbon.fibers"));
+                    int actualEntry = Settings.System.getIntForUser(
+                            getActivity().getContentResolver(),
+                            Settings.System.EXPANDED_SCREENTIMEOUT_MODE, 0,
+                            UserHandle.USER_CURRENT);
+                    return new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.pref_screentimeout_mode_title)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setSingleChoiceItems(dialogEntries, actualEntry,
+                        new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            Settings.System.putInt(
+                                getActivity().getContentResolver(),
+                                Settings.System.EXPANDED_SCREENTIMEOUT_MODE,
+                                Integer.valueOf(dialogValuesST[which]));
+                                dismiss();
+                        }
+                    })
+                    .create();
+                case DLG_NETWORK_MODE:
+                    dialogEntries = getResources().getStringArray(
+                            getResources().getIdentifier("entries_network_widget",
+                            "array", "com.carbon.fibers"));
+                    final String[] dialogValuesNM = getResources().getStringArray(
+                            getResources().getIdentifier("values_network_widget",
+                            "array", "com.carbon.fibers"));
+                    actualEntry = Settings.System.getIntForUser(
+                            getActivity().getContentResolver(),
+                            Settings.System.EXPANDED_NETWORK_MODE, 0,
+                            UserHandle.USER_CURRENT);
+                    return new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.pref_network_mode_title)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setSingleChoiceItems(dialogEntries, actualEntry,
+                        new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            Settings.System.putInt(
+                                getActivity().getContentResolver(),
+                                Settings.System.EXPANDED_NETWORK_MODE,
+                                Integer.valueOf(dialogValuesNM[which]));
+                                dismiss();
+                        }
+                    })
+                    .create();
+                case DLG_RINGER:
+                    dialogEntries = getResources().getStringArray(
+                            getResources().getIdentifier("entries_ring_widget",
+                            "array", "com.carbon.fibers"));
+                    final String[] dialogValuesSM = getResources().getStringArray(
+                            getResources().getIdentifier("values_ring_widget",
+                            "array", "com.carbon.fibers"));
+                    final int size = dialogValuesSM.length;
+                    String storedEntries = Settings.System.getStringForUser(
+                            getActivity().getContentResolver(),
+                            Settings.System.EXPANDED_RING_MODE,
+                            UserHandle.USER_CURRENT);
+                    final boolean[] actualSelections = new boolean[size];
+                    if (storedEntries == null) {
+                        for (int i = 0; i < size; i++) {
+                            actualSelections[i] = true;
+                        }
+                    } else {
+                        String [] actualEntries = TextUtils.split(storedEntries, SEPARATOR);
+                        for (int i = 0; i < size; i++) {
+                            for (int j = 0; j < actualEntries.length; j++) {
+                                if (dialogValuesSM[i].equals(actualEntries[j])) {
+                                    actualSelections[i] = true;
+                                }
+                            }
+                        }
+                    }
+                    return new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.pref_ring_mode_title)
+                    .setNegativeButton(R.string.cancel, null)
+                    .setMultiChoiceItems(dialogEntries, actualSelections,
+                        new  DialogInterface.OnMultiChoiceClickListener() {
+                        public void onClick(DialogInterface dialog, int indexSelected,
+                                boolean isChecked) {
+                            actualSelections[indexSelected] = isChecked;
+                        }
+                    })
+                    .setPositiveButton(R.string.ok,
+                        new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            String finalValues = "";
+                            for (int i = 0; i < size; i++) {
+                                if (actualSelections[i]) {
+                                    if (!finalValues.isEmpty()) {
+                                        finalValues += SEPARATOR;
+                                    }
+                                    finalValues += dialogValuesSM[i];
+                                }
+                            }
+                            // user did not select any entries
+                            // reshow dialog and reset to actual
+                            // values back.
+                            if (finalValues.isEmpty()) {
+                                getOwner().showDialogInner(DLG_RINGER);
+                                return;
+                            }
+                            Settings.System.putString(
+                                getActivity().getContentResolver(),
+                                Settings.System.EXPANDED_RING_MODE,
+                                finalValues);
+                        }
+                    })
+                    .create();
+            }
+            throw new IllegalArgumentException("unknown id " + id);
+        }
+
+        @Override
+        public void onCancel(DialogInterface dialog) {
+
+        }
     }
 
     private static class TileAdapter extends ArrayAdapter<String> {

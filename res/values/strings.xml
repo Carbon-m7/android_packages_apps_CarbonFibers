@@ -32,6 +32,25 @@
     <!-- Menu Strings -->
     <string name="menu_main_activity_change_locale">Locale</string>
 
+    <string name="time_0_seconds_off">Off</string>
+    <string name="time_0_2_seconds">.2 seconds</string>
+    <string name="time_0_5_seconds">.5 seconds</string>
+    <string name="time_1_second">1 second</string>
+    <string name="time_1_5_seconds">1.5 seconds</string>
+    <string name="time_2_seconds">2 seconds</string>
+    <string name="time_2_5_seconds">2.5 seconds</string>
+    <string name="time_3_seconds">3 seconds</string>
+    <string name="time_3_5_seconds">3.5 seconds</string>
+    <string name="time_4_seconds">4 seconds</string>
+    <string name="time_4_5_seconds">4.5 seconds</string>
+    <string name="time_5_seconds">5 seconds</string>
+    <string name="time_5_5_seconds">5.5 seconds</string>
+    <string name="time_6_seconds">6 seconds</string>
+    <string name="time_7_seconds">7 seconds</string>
+    <string name="time_8_seconds">8 seconds</string>
+    <string name="time_9_seconds">9 seconds</string>
+    <string name="time_10_seconds">10 seconds</string>
+
     <!-- General Strings -->
     <string name="advanced_settings">Advanced settings</string>
     <string name="misc_short">Misc</string>
@@ -123,11 +142,8 @@
 
     <string name="status_bar_title">Statusbar</string>
     <string name="sb_battery_category">Battery</string>
-<<<<<<< HEAD
     <string name="sb_clock_category">Clock</string>
-=======
     <string name="sb_general_category">General</string>
->>>>>>> d099efa... System bar color WIP
     <string name="sb_notification_category">Notification Drawer</string>
     <string name="sb_quicksettings_category">Quick Settings</string>
 
@@ -166,6 +182,7 @@
     <string name="title_tile_expanded_desktop">Expanded desktop</string>
     <string name="title_tile_network_adb">ADB over network</string>
     <string name="title_tile_music">Music playback</string>
+    <string name="title_tile_screenshot">Screenshot</string>
     <string name="title_tile_immersive">Immersive mode</string>
 
     <string name="title_dynamic_tiles">Dynamic tiles</string>
@@ -190,6 +207,7 @@
     <string name="summary_collapse_panel">Close the Quick Settings panel after toggling a tile</string>
 
     <string name="pref_network_mode_title">Network modes</string>
+    <string name="pref_screenshot_delay_title">Screenshot delay</string>
     <string name="pref_screentimeout_mode_title">Screen timeout modes</string>
     <string name="pref_ring_mode_title">Sound modes</string>
     <string name="pref_ring_mode_summary">View or change the Sound button modes</string>
